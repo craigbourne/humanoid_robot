@@ -5,6 +5,10 @@ The AbstractRobot class serves as a template that defines essential behaviour al
 
 from abc import ABC, abstractmethod
 from typing import Optional
+from safety import SafetyController
+from environment import EnvironmentMonitor
+from motion import RobotMotion
+from object_handling import ObjectHandler
 
 class AbstractRobot(ABC):
     """
@@ -64,3 +68,69 @@ class AbstractRobot(ABC):
         Returns: str - Current robot state
         """
         return self._current_state
+
+class Robot(AbstractRobot):
+    """
+    Concrete implementation of the robot system.
+    Coordinates all robot subsystems and implements required abstract methods.
+    """
+
+    def __init__(self):
+        """
+        Initialise the robot with all required subsystems.
+        Sets up safety, environment monitoring, motion and object handling.
+        """
+        super().__init__()  # Initialise the parent class
+        # Initialise subsystems
+        self._safety = SafetyController()
+        self._environment = EnvironmentMonitor()
+        self._motion = RobotMotion()
+        self._object_handler = ObjectHandler()
+        self._current_position = [0, 0, 0]  # x, y, z coordinates
+        self._current_orientation = [0, 0, 0]  # roll, pitch, yaw
+
+    def initialise(self) -> bool:
+        """
+        Perform full robot initialisation sequence.
+        Returns: bool - True if initialisation successful, False otherwise
+        """
+        try:
+            # Check all subsystems
+            if (self._safety and self._environment and 
+                self._motion and self._object_handler):
+                self._is_operational = True
+                self._current_state = "Idle"
+                return True
+            return False
+        except Exception:
+            self._is_operational = False
+            self._current_state = "Error"
+            return False
+
+    def get_current_state(self) -> str:
+        """
+        Get the robot's current operational state.
+        
+        Returns: str - Current state of the robot
+        """
+        return self._current_state
+
+    def validate_command(self, command: str) -> bool:
+        """
+        Check if a command can be executed in the current state.
+        Args: command - Command to validate
+        Returns: bool - True if command is valid, False otherwise
+        """
+        if not self.is_operational:
+            return False
+            
+        # Basic command validation based on current state
+        valid_commands = {
+            "Idle": ["walk", "turn", "grasp"],
+            "Walking": ["stop", "turn"],
+            "Turning": ["stop", "walk"],
+            "Grasping": ["release"],
+            "Error": ["reset"]
+        }
+        
+        return command in valid_commands.get(self._current_state, [])
