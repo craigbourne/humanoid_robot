@@ -5,10 +5,10 @@ The AbstractRobot class serves as a template that defines essential behaviour al
 
 from abc import ABC, abstractmethod
 from typing import Optional
-from safety import SafetyController
-from environment import EnvironmentMonitor
-from motion import RobotMotion
-from object_handling import ObjectHandler
+from .safety import SafetyController
+from .environment import EnvironmentMonitor
+from .motion import RobotMotion
+from .object_handling import ObjectHandler
 
 class AbstractRobot(ABC):
     """
