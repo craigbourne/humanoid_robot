@@ -5,7 +5,6 @@ Each interface establishes a contract that implementing classes must fulfil.
 
 from abc import ABC, abstractmethod
 
-
 class IGrippable(ABC):
     """
     Interface for objects that can perform gripping actions.

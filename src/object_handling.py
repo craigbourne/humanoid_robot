@@ -6,7 +6,6 @@ Controls gripping mechanisms and force monitoring.
 from typing import Optional
 from .interfaces import IGrippable
 
-
 class ObjectHandler(IGrippable):
     """
     Controls object manipulation operations including gripping and releasing.
@@ -51,7 +50,7 @@ class ObjectHandler(IGrippable):
         Returns: bool - True if operation is safe, False otherwise
         """
         # In a real system, this would check various safety conditions
-        # For now, return True if force is within limits
+        # For now, returns True if force is within limits
         return self._current_force < self._max_grip_force
 
     def monitor_grip_force(self) -> float:
