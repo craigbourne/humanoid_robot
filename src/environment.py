@@ -4,7 +4,7 @@ Simulates sensor data for robot environment awareness.
 """
 
 from typing import Dict, List
-from .interfaces import ISensing
+from src.interfaces import ISensing
 
 class EnvironmentMonitor(ISensing):
     """

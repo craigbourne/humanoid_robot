@@ -4,7 +4,7 @@ Implements movement with safety considerations.
 """
 
 from typing import List, Tuple
-from .interfaces import IMoveable
+from src.interfaces import IMoveable
 
 class RobotMotion(IMoveable):
     """

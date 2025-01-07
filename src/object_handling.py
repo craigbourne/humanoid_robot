@@ -4,7 +4,7 @@ Controls gripping mechanisms and force monitoring.
 """
 
 from typing import Optional
-from .interfaces import IGrippable
+from src.interfaces import IGrippable
 
 class ObjectHandler(IGrippable):
     """
