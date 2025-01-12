@@ -96,7 +96,7 @@ class Robot(AbstractRobot):
         """
         try:
             # Check all subsystems
-            if (self._safety and self._environment and 
+            if (self._safety.initialise() and self._environment and 
                 self._motion and self._object_handler):
                 self._is_operational = True
                 self._current_state = "Idle"

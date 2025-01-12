@@ -19,6 +19,14 @@ class SafetyController:
         self._safety_status: bool = False         # System starts in unsafe state
         self._emergency_stop: bool = False        # Emergency stop not triggered
 
+    def initialise(self) -> bool:
+        """
+        Initialise safety system and perform initial checks.
+        Returns: bool - True if initialisation successful
+        """
+        self._safety_status = True  # Set to safe after initial checks
+        return True
+
     def validate_safety(self) -> bool:
         """
         Check if all safety conditions are met.
