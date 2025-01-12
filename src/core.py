@@ -1,19 +1,20 @@
 """
 This module contains the abstract base class for the robot system.
-The AbstractRobot class serves as a template that defines essential behaviour all robot implementations must provide.
+AbstractRobot serves as a template that defines behaviour all robot implementations must provide.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
 from src.safety import SafetyController
 from src.environment import EnvironmentMonitor
 from src.motion import RobotMotion
 from src.object_handling import ObjectHandler
 
+# pylint: disable=too-many-instance-attributes
+
 class AbstractRobot(ABC):
     """
     Abstract base class defining core robot functionality.
-    This class establishes the fundamental structure for robot implementations, ensuring consistent behaviour across different robot types.
+    Structure for robot implementations, ensuring consistent behaviour across robot types.
     """
 
     def __init__(self):
@@ -32,7 +33,6 @@ class AbstractRobot(ABC):
         Must be implemented by concrete classes to set up their specific requirements.
         Returns: bool - True if initialisation successful, False otherwise
         """
-        pass
 
     @abstractmethod
     def get_current_state(self) -> str:
@@ -41,7 +41,6 @@ class AbstractRobot(ABC):
         Must be implemented by concrete classes to reflect their specific states.
         Returns: str - Current state of the robot (e.g., 'Idle', 'Walking', 'Error')
         """
-        pass
 
     @abstractmethod
     def validate_command(self, command: str) -> bool:
@@ -51,7 +50,6 @@ class AbstractRobot(ABC):
         Args: command - The command to validate
         Returns: bool - True if command is valid in current state, False otherwise
         """
-        pass
 
     @property
     def is_operational(self) -> bool:
@@ -96,13 +94,13 @@ class Robot(AbstractRobot):
         """
         try:
             # Check all subsystems
-            if (self._safety.initialise() and self._environment and 
+            if (self._safety.initialise() and self._environment and
                 self._motion and self._object_handler):
                 self._is_operational = True
                 self._current_state = "Idle"
                 return True
             return False
-        except Exception:
+        except (AttributeError, RuntimeError):  # Specific exceptions
             self._is_operational = False
             self._current_state = "Error"
             return False
@@ -123,7 +121,7 @@ class Robot(AbstractRobot):
         """
         if not self.is_operational:
             return False
-            
+
         # Basic command validation based on current state
         valid_commands = {
             "Idle": ["walk", "turn", "grasp"],
@@ -132,5 +130,5 @@ class Robot(AbstractRobot):
             "Grasping": ["release"],
             "Error": ["reset"]
         }
-        
+
         return command in valid_commands.get(self._current_state, [])
