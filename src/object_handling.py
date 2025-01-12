@@ -3,7 +3,6 @@ Module for handling object manipulation operations.
 Controls gripping mechanisms and force monitoring.
 """
 
-from typing import Optional
 from src.interfaces import IGrippable
 
 class ObjectHandler(IGrippable):

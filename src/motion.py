@@ -3,7 +3,7 @@ Module for controlling robot motion including walking and turning.
 Implements movement with safety considerations.
 """
 
-from typing import List, Tuple
+from typing import List
 from src.interfaces import IMoveable
 
 class RobotMotion(IMoveable):
@@ -48,7 +48,7 @@ class RobotMotion(IMoveable):
         """
         if direction not in ['forward', 'backward']:
             return False
-            
+
         self._walking_speed = 5.0 if direction == 'forward' else -5.0
         return self.move()
 
@@ -60,7 +60,7 @@ class RobotMotion(IMoveable):
         """
         if not -180.0 <= degrees <= 180.0:
             return False
-            
+
         self._turning_angle = degrees
         return self.move()
 
@@ -69,7 +69,8 @@ class RobotMotion(IMoveable):
         Check if intended movement is within safety boundaries.
         Returns: bool - True if movement is safe, False otherwise
         """
-        # This would be used to check actual safety conditions in real-world setting, but for now, returns True if not already moving
+        # This would be used to check actual safety conditions in real-world setting
+        # For now, returns True if not already moving
         return not self._is_moving
 
     def maintain_stability(self) -> bool:

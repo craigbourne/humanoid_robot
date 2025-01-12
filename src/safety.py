@@ -48,8 +48,15 @@ class SafetyController:
         Args: position - Current [x, y, z] position of robot
         Returns: bool - True if position is safe, False if barriers violated
         """
-        # Basic check - will be enhanced with actual barrier logic
-        return True
+        # Basic boundary checks
+        x, y, z = position
+        # Consider safe boundaries as 100cm from edges
+        safe_min = 100
+        safe_max = 900  # For a 1000x1000 workspace
+
+        return (safe_min <= x <= safe_max and
+                safe_min <= y <= safe_max and
+                safe_min <= z <= safe_max)
 
     def log_safety_event(self, event: str) -> None:
         """
