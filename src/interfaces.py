@@ -8,16 +8,15 @@ from abc import ABC, abstractmethod
 class IGrippable(ABC):
     """
     Interface for objects that can perform gripping actions.
-    This interface ensures implementing classes provide methods for gripping and releasing objects safely.
+    Ensures implementing classes provide methods for gripping & releasing objects safely.
     """
-    
+
     @abstractmethod
     def grip(self) -> bool:
         """
         Activate the gripping mechanism.
         Returns: bool - True if gripping successful, False otherwise
         """
-        pass
 
     @abstractmethod
     def release(self) -> bool:
@@ -25,13 +24,11 @@ class IGrippable(ABC):
         Release the gripping mechanism.
         Returns: bool - True if release successful, False otherwise
         """
-        pass
-
 
 class IMoveable(ABC):
     """
     Interface for objects that can perform movement operations.
-    This interface ensures implementing classes provide methods for controlled movement and stopping.
+    Ensures implementing classes provide methods for controlled movement & stopping.
     """
 
     @abstractmethod
@@ -40,7 +37,6 @@ class IMoveable(ABC):
         Initiate movement operation.
         Returns: bool - True if movement started successfully, False otherwise
         """
-        pass
 
     @abstractmethod
     def stop(self) -> bool:
@@ -48,13 +44,12 @@ class IMoveable(ABC):
         Stop any current movement.
         Returns: bool - True if stop successful, False otherwise
         """
-        pass
 
 
 class ISensing(ABC):
     """
     Interface for objects that can perform environmental sensing.
-    This interface ensures implementing classes provide methods for scanning the environment and detecting objects.
+    Ensures implementing classes provide methods for scanning environment & detecting objects.
     """
 
     @abstractmethod
@@ -63,7 +58,6 @@ class ISensing(ABC):
         Perform an environment scan.
         Returns: dict - Sensor data from the scan
         """
-        pass
 
     @abstractmethod
     def detect(self) -> list:
@@ -71,4 +65,3 @@ class ISensing(ABC):
         Detect objects in the environment.
         Returns: list - List of detected objects
         """
-        pass
