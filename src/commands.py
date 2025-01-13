@@ -29,7 +29,7 @@ class CommandProcessor:
         try:
             self._command_queue.append(command)
             return True
-        except Exception:
+        except (MemoryError, RuntimeError):
             return False
 
     def process_next_command(self) -> Optional[str]:
