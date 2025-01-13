@@ -4,10 +4,9 @@ Handles position tracking, movement planning and spatial awareness.
 """
 
 import math
-from time import sleep
 from typing import Tuple, Dict, List
 
-
+# pylint: disable=too-many-instance-attributes
 class NavigationSystem:
     """
     Manages robot navigation, location tracking and spatial awareness.
@@ -24,16 +23,16 @@ class NavigationSystem:
         # Room setup
         self.room_width, self.room_length = room_dimensions
         self.centre = (self.room_width / 2, self.room_length / 2)
-        
+
         # Robot's current state
         self.position = list(self.centre)  # Start in centre of room
         self.facing_angle = 0  # 0 degrees = facing 'forward'
-        
+
         # Robot's physical dimensions
         self.height = 173  # cm (Tesla Optimus height)
         self.width = 60   # cm (shoulder width)
         self.safe_distance = 100  # Minimum safe distance from objects
-        
+
         # Object tracking
         self.objects: Dict[int, List[float]] = {}
         self.object_counter = 0
@@ -50,7 +49,7 @@ class NavigationSystem:
         print("- (0, 0) is at the room's bottom-left corner")
         print("- Moving right increases X coordinate")
         print("- Moving forward increases Y coordinate")
-        
+
         print("\nSafety Information:")
         print(f"- Robot height: {self.height}cm")
         print(f"- Robot width: {self.width}cm")
@@ -61,7 +60,7 @@ class NavigationSystem:
         Provide a human-friendly summary of current location and surroundings.
         """
         nearby_objects = self.get_nearby_objects()
-        
+
         summary = [
             f"\nCurrent Position: ({self.position[0]:.0f}, {self.position[1]:.0f})",
             f"Facing: {self.facing_angle} degrees",
@@ -71,14 +70,14 @@ class NavigationSystem:
             f"- Right: {self.room_width - self.position[0]:.0f}cm",
             f"- Left: {self.position[0]:.0f}cm"
         ]
-        
+
         if nearby_objects:
             summary.extend(["\nNearby Objects:"])
             for obj_id, distance in nearby_objects.items():
                 pos = self.objects[obj_id]
                 direction = self.get_relative_direction(pos[0], pos[1])
                 summary.append(f"- Object {obj_id}: {direction}, {distance:.0f}cm away")
-        
+
         return "\n".join(summary)
 
     def get_relative_direction(self, x: float, y: float) -> str:
@@ -87,31 +86,28 @@ class NavigationSystem:
         """
         rel_x = x - self.position[0]
         rel_y = y - self.position[1]
-        
+
         angle = math.degrees(math.atan2(rel_y, rel_x))
         relative_angle = (angle - self.facing_angle) % 360
-        
+
         # Convert mathematical angle to compass direction
         if 315 <= relative_angle or relative_angle < 45:
             return "ahead"
-        elif 45 <= relative_angle < 135:
+        if 45 <= relative_angle < 135:
             return "to your right"
-        elif 135 <= relative_angle < 225:
+        if 135 <= relative_angle < 225:
             return "behind you"
-        else:
-            return "to your left"
+        return "to your left"
 
     def get_nearby_objects(self, max_distance: float = 200) -> Dict[int, float]:
         """
         Find objects within specified distance of robot.
-        
-        Returns:
-            Dictionary mapping object IDs to their distances
+        Returns: Dictionary mapping object IDs to their distances
         """
         nearby = {}
         for obj_id, pos in self.objects.items():
             distance = math.sqrt(
-                (pos[0] - self.position[0])**2 + 
+                (pos[0] - self.position[0])**2 +
                 (pos[1] - self.position[1])**2
             )
             if distance <= max_distance:
@@ -127,14 +123,14 @@ class NavigationSystem:
         if not (safety_margin <= target_x <= self.room_width - safety_margin and
                 safety_margin <= target_y <= self.room_length - safety_margin):
             return False
-            
+
         # Check distance to all objects
         for pos in self.objects.values():
             distance = math.sqrt(
-                (pos[0] - target_x)**2 + 
+                (pos[0] - target_x)**2 +
                 (pos[1] - target_y)**2
             )
             if distance < self.safe_distance:
                 return False
-                
+
         return True
