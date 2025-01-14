@@ -10,15 +10,12 @@ from typing import Tuple, Dict, List
 class NavigationSystem:
     """
     Manages robot navigation, location tracking and spatial awareness.
-    Think of this as the robot's internal GPS and spatial awareness system.
     """
 
     def __init__(self, room_dimensions: Tuple[float, float] = (1000, 1000)):
         """
         Set up the navigation system.
-        
-        Args:
-            room_dimensions: Width and length of room in centimetres
+        Args: room_dimensions - Width and length of room in centimetres
         """
         # Room setup
         self.room_width, self.room_length = room_dimensions
@@ -33,9 +30,13 @@ class NavigationSystem:
         self.width = 60   # cm (shoulder width)
         self.safe_distance = 100  # Minimum safe distance from objects
 
-        # Object tracking
-        self.objects: Dict[int, List[float]] = {}
-        self.object_counter = 0
+        # Initialise objects in the workspace
+        self.objects: Dict[int, List[float]] = {
+            1: [300.0, 300.0],  # Object 1 in bottom left quadrant
+            2: [700.0, 700.0],  # Object 2 in top right quadrant
+            3: [300.0, 700.0]   # Object 3 in top left quadrant
+        }
+        self.object_counter = 3
 
     def explain_workspace(self) -> None:
         """
@@ -44,6 +45,17 @@ class NavigationSystem:
         print("\n=== Workspace Guide ===")
         print(f"Room size: {self.room_width/100:.1f}m x {self.room_length/100:.1f}m")
         print(f"Robot starting position: Centre of room ({self.centre[0]}, {self.centre[1]})")
+
+        print("\nObjects in workspace:")
+        for obj_id, pos in self.objects.items():
+            distance = math.sqrt(
+                (pos[0] - self.position[0])**2 +
+                (pos[1] - self.position[1])**2
+            )
+            direction = self.get_relative_direction(pos[0], pos[1])
+            print(f"Object {obj_id}: at coordinates ({pos[0]}, {pos[1]})")
+            print(f"         {distance:.0f} centimetres {direction} from robot's current position")
+
         print("\nNavigation:")
         print("- Coordinates are in centimetres")
         print("- (0, 0) is at the room's bottom-left corner")
