@@ -132,7 +132,7 @@ class Robot(AbstractRobot):
         }
 
         return command in valid_commands.get(self._current_state, [])
-    
+
     def grip_object(self) -> bool:
         """
         Attempt to grip an object.
@@ -153,4 +153,3 @@ class Robot(AbstractRobot):
         Returns: bool - True if object is held, False otherwise
         """
         return self._object_handler._gripper_status
-
