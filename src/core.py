@@ -132,3 +132,25 @@ class Robot(AbstractRobot):
         }
 
         return command in valid_commands.get(self._current_state, [])
+    
+    def grip_object(self) -> bool:
+        """
+        Attempt to grip an object.
+        Returns: bool - True if grip successful, False otherwise
+        """
+        return self._object_handler.grip()
+
+    def release_object(self) -> bool:
+        """
+        Release currently held object.
+        Returns: bool - True if release successful, False otherwise
+        """
+        return self._object_handler.release()
+
+    def is_holding_object(self) -> bool:
+        """
+        Check if robot is currently holding an object.
+        Returns: bool - True if object is held, False otherwise
+        """
+        return self._object_handler._gripper_status
+
