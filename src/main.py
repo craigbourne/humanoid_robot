@@ -14,18 +14,15 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def display_help() -> None:
     """Display available commands and their usage."""
-    print("\nAvailable commands:")
-    print("  scan - Scan surroundings for objects and obstacles")
-    print("  walk <direction> <steps> - Walk in a direction (e.g., 'walk north-west 150')")
-    print("  detect - Look for objects within range")
-    print("  grasp - Pick up nearby object")
-    print("  release - Let go of held object")
-    print("  where - Show distance and direction to all objects")
-    print("  status - Show current position")
-    print("  help - Show this guide")
-    print("  quit - Exit program")
-    print("\nValid directions:")
-    print("  north, north-east, east, south-east, south, south-west, west, north-west")
+    print("\nCommands:")
+    print("  walk <direction> <steps> - e.g., 'walk north-west 150'")
+    print("  scan    - Check surroundings")
+    print("  detect  - Look for nearby objects")
+    print("  grasp   - Pick up object")
+    print("  release - Let go of object")
+    print("  help    - Show commands")
+    print("  quit    - Exit")
+    print("\nDirections: north, north-east, east, south-east, south, south-west, west, north-west")
 
 def handle_movement(parts: List[str], navigation: NavigationSystem) -> None:
     """Handle walk <direction> <steps> command."""
@@ -67,7 +64,7 @@ def handle_object_detection(navigation: NavigationSystem) -> None:
 
 def handle_object_interaction(command: str, robot: Robot,
                             navigation: NavigationSystem) -> None:
-    """Handle grasp and release commands."""
+    """Handle grasp and drop commands."""
     if command == "grasp":
         grippable = navigation.get_nearby_objects(max_distance=100)
         if grippable:
@@ -76,10 +73,10 @@ def handle_object_interaction(command: str, robot: Robot,
             print("Object gripped successfully")
         else:
             print("\nNo objects within reach")
-    elif command == "release":
+    elif command == "drop":
         if robot.is_holding_object():
-            robot.release_object()
-            print("\nObject released")
+            robot.drop_object()
+            print("\nObject dropd")
         else:
             print("\nNo object currently held")
 
@@ -106,12 +103,11 @@ def main() -> None:
     robot = Robot()
     navigation = NavigationSystem()
 
-    print("\nStarting Humanoid Robot Control System...")
+    print("\n=== Robot Control System ===")
     if not robot.initialise():
         print("Robot initialisation failed.")
         return
 
-    print("\nRobot system initialised successfully.")
     navigation.explain_workspace()
     display_help()
 
@@ -136,7 +132,7 @@ def main() -> None:
                 handle_scan(navigation)
             elif command == "detect":
                 handle_object_detection(navigation)
-            elif command in ["grasp", "release"]:
+            elif command in ["grasp", "drop"]:
                 handle_object_interaction(command, robot, navigation)
             elif parts[0] == "walk":
                 handle_movement(parts, navigation)

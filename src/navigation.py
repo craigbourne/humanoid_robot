@@ -4,7 +4,7 @@ Handles position tracking, movement planning and spatial awareness.
 """
 
 import math
-from typing import Tuple, Dict, List
+from typing import Tuple, Dict, List, Optional
 
 # pylint: disable=too-many-instance-attributes
 class NavigationSystem:
@@ -38,34 +38,44 @@ class NavigationSystem:
         }
         self.object_counter = 3
 
+    def get_steps_to_object(self, obj_id: int) -> Optional[Tuple[str, int]]:
+        """
+        Calculate direction and steps to reach an object.
+        Returns: Tuple of (direction, steps) or None if object not found
+        """
+        obj_pos = self.objects.get(obj_id)
+        if not obj_pos:
+            return None
+        
+        dx = obj_pos[0] - self.position[0]
+        dy = obj_pos[1] - self.position[1]
+        
+        # Determine primary direction
+        if dx > 0 and dy > 0:
+            direction = "north-east"
+        elif dx > 0 and dy < 0:
+            direction = "south-east"
+        elif dx < 0 and dy > 0:
+            direction = "north-west"
+        else:
+            direction = "south-west"
+            
+        # Calculate steps (each step is 10 centimetres)
+        distance = math.sqrt(dx**2 + dy**2)
+        steps = int(distance / 10)
+        
+        return direction, steps
+
     def explain_workspace(self) -> None:
         """
         Provide a clear explanation of the workspace layout.
         """
-        print("\n=== Workspace Guide ===")
-        print(f"Room size: {self.room_width/100:.1f}m x {self.room_length/100:.1f}m")
-        print(f"Robot starting position: Centre of room ({self.centre[0]}, {self.centre[1]})")
-
-        print("\nObjects in workspace:")
-        for obj_id, pos in self.objects.items():
-            distance = math.sqrt(
-                (pos[0] - self.position[0])**2 +
-                (pos[1] - self.position[1])**2
-            )
-            direction = self.get_relative_direction(pos[0], pos[1])
-            print(f"Object {obj_id}: at coordinates ({pos[0]}, {pos[1]})")
-            print(f"         {distance:.0f} centimetres {direction} from robot's current position")
-
-        print("\nNavigation:")
-        print("- Coordinates are in centimetres")
-        print("- (0, 0) is at the room's bottom-left corner")
-        print("- Moving right increases X coordinate")
-        print("- Moving forward increases Y coordinate")
-
-        print("\nSafety Information:")
-        print(f"- Robot height: {self.height}cm")
-        print(f"- Robot width: {self.width}cm")
-        print(f"- Minimum safe distance from objects: {self.safe_distance}cm")
+        print(f"Room size: {self.room_width/100:.0f}m x {self.room_length/100:.0f}m")
+        print("Robot at centre of room")
+        print("\nObjects to interact with:")
+        for obj_id in self.objects:
+            direction, steps = self.get_steps_to_object(obj_id)
+            print(f"Object {obj_id}: {steps} steps {direction}")
 
     def get_location_summary(self) -> str:
         """
@@ -146,3 +156,29 @@ class NavigationSystem:
                 return False
 
         return True
+
+    def walk(self, direction: str, steps: int) -> bool:
+      """
+      Move in specified direction by number of steps.
+      Each step is 10 centimetres.
+      Returns: bool - True if movement successful, False otherwise
+      """
+      # Calculate target position based on direction and steps
+      dx, dy = 0, 0
+      if "north" in direction:
+          dy = steps * 10
+      if "south" in direction:
+          dy = -steps * 10
+      if "east" in direction:
+          dx = steps * 10
+      if "west" in direction:
+          dx = -steps * 10
+
+      target_x = self.position[0] + dx
+      target_y = self.position[1] + dy
+
+      # Check if movement is safe
+      if self.is_movement_safe(target_x, target_y):
+          self.position = [target_x, target_y]
+          return True
+      return False
