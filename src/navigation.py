@@ -139,46 +139,66 @@ class NavigationSystem:
     def is_movement_safe(self, target_x: float, target_y: float) -> bool:
         """
         Check if movement to target position is safe.
+        First checks if movement would get us within gripping range of an object.
+        If not, ensures we maintain safe distance from all objects.
         """
-        # Check room boundaries (including robot width)
-        safety_margin = self.width / 2 + self.safe_distance
-        if not (safety_margin <= target_x <= self.room_width - safety_margin and
-                safety_margin <= target_y <= self.room_length - safety_margin):
+        # First, check room boundaries
+        if not (0 <= target_x <= self.room_width and 
+                0 <= target_y <= self.room_length):
             return False
 
-        # Check distance to all objects
-        for pos in self.objects.values():
-            distance = math.sqrt(
-                (pos[0] - target_x)**2 +
-                (pos[1] - target_y)**2
+        # Check if we're trying to reach an object
+        for obj_pos in self.objects.values():
+            distance_to_object = math.sqrt(
+                (obj_pos[0] - target_x)**2 + 
+                (obj_pos[1] - target_y)**2
             )
-            if distance < self.safe_distance:
+            # Allow movement if it gets us within gripping range
+            if distance_to_object <= 100:  # 100cm gripping range
+                return True
+            # If we're not trying to grip but too close, prevent movement
+            if distance_to_object < self.safe_distance:
                 return False
 
+        # If not near any objects, movement is safe
         return True
 
     def walk(self, direction: str, steps: int) -> bool:
-      """
-      Move in specified direction by number of steps.
-      Each step is 10 centimetres.
-      Returns: bool - True if movement successful, False otherwise
-      """
-      # Calculate target position based on direction and steps
-      dx, dy = 0, 0
-      if "north" in direction:
-          dy = steps * 10
-      if "south" in direction:
-          dy = -steps * 10
-      if "east" in direction:
-          dx = steps * 10
-      if "west" in direction:
-          dx = -steps * 10
+        """
+        Move in specified direction by number of steps.
+        Accounts for diagonal movement being longer than cardinal directions.
+        Each step is 10 centimetres in cardinal directions, adjusted for diagonals.
+        Returns: bool - True if movement successful, False otherwise
+        """
+        # Calculate target position based on direction and steps
+        dx, dy = 0, 0
+        step_size = 10  # Base step size in centimetres
+        
+        # For diagonal movements, adjust step size
+        is_diagonal = False
+        if "north" in direction and ("east" in direction or "west" in direction):
+            is_diagonal = True
+        if "south" in direction and ("east" in direction or "west" in direction):
+            is_diagonal = True
+        
+        # Adjust step size for diagonal movement
+        if is_diagonal:
+            step_size = step_size / math.sqrt(2)
+        
+        # Calculate movement
+        if "north" in direction:
+            dy = steps * step_size
+        if "south" in direction:
+            dy = -steps * step_size
+        if "east" in direction:
+            dx = steps * step_size
+        if "west" in direction:
+            dx = -steps * step_size
 
-      target_x = self.position[0] + dx
-      target_y = self.position[1] + dy
+        target_x = self.position[0] + dx
+        target_y = self.position[1] + dy
 
-      # Check if movement is safe
-      if self.is_movement_safe(target_x, target_y):
-          self.position = [target_x, target_y]
-          return True
-      return False
+        if self.is_movement_safe(target_x, target_y):
+            self.position = [target_x, target_y]
+            return True
+        return False

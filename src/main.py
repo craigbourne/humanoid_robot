@@ -64,7 +64,7 @@ def handle_object_detection(navigation: NavigationSystem) -> None:
 
 def handle_object_interaction(command: str, robot: Robot,
                             navigation: NavigationSystem) -> None:
-    """Handle grasp and drop commands."""
+    """Handle grasp and release commands."""
     if command == "grasp":
         grippable = navigation.get_nearby_objects(max_distance=100)
         if grippable:
@@ -73,10 +73,17 @@ def handle_object_interaction(command: str, robot: Robot,
             print("Object gripped successfully")
         else:
             print("\nNo objects within reach")
-    elif command == "drop":
+    elif command == "release":
         if robot.is_holding_object():
-            robot.drop_object()
-            print("\nObject dropd")
+            robot.release_object()
+            print("\nObject released")
+
+            # Immediate feedback about the released object's position
+            nearby = navigation.get_nearby_objects(max_distance=100)
+            if nearby:
+                print("Object remains within gripping range")
+            else:
+                print("Object is no longer within gripping range")
         else:
             print("\nNo object currently held")
 
@@ -86,10 +93,12 @@ def handle_scan(navigation: NavigationSystem) -> None:
     pos = navigation.position
     print(f"Current position: ({pos[0]:.0f}, {pos[1]:.0f})")
 
-    # Report nearby objects with directions
+    # Report nearby objects with directions and gripping status
+    nearby = navigation.get_nearby_objects(max_distance=100)
     for obj_id in navigation.objects:
         direction, steps = navigation.get_steps_to_object(obj_id)
-        print(f"Object {obj_id}: {steps} steps {direction}")
+        status = "GRIPPABLE" if obj_id in nearby else "out of reach"
+        print(f"Object {obj_id}: {steps} steps {direction} ({status})")
 
 def handle_where(navigation: NavigationSystem) -> None:
     """Handle where command."""
@@ -132,7 +141,7 @@ def main() -> None:
                 handle_scan(navigation)
             elif command == "detect":
                 handle_object_detection(navigation)
-            elif command in ["grasp", "drop"]:
+            elif command in ["grasp", "release"]:
                 handle_object_interaction(command, robot, navigation)
             elif parts[0] == "walk":
                 handle_movement(parts, navigation)
