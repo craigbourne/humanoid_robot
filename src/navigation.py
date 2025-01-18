@@ -38,6 +38,12 @@ class NavigationSystem:
         }
         self.object_counter = 3
 
+        # Add storage bay in north-east corner of room
+        self.storage_bay = [800.0, 800.0]  # Positioned away from objects
+        
+        # Track object status
+        self.stored_objects: List[int] = []  # Keep track of which objects are in storage
+
     def get_steps_to_object(self, obj_id: int) -> Optional[Tuple[str, int]]:
         """
         Calculate direction and steps to reach an object.
@@ -101,6 +107,17 @@ class NavigationSystem:
                 summary.append(f"- Object {obj_id}: {direction}, {distance:.0f}cm away")
 
         return "\n".join(summary)
+
+    def is_at_storage_bay(self, position: List[float], tolerance: float = 50) -> bool:
+        """
+        Check if given position is at the storage bay.
+        Uses a tolerance value to allow slight positioning variations.
+        """
+        distance = math.sqrt(
+            (position[0] - self.storage_bay[0])**2 +
+            (position[1] - self.storage_bay[1])**2
+        )
+        return distance <= tolerance
 
     def get_relative_direction(self, x: float, y: float) -> str:
         """

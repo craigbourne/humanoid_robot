@@ -62,8 +62,7 @@ def handle_object_detection(navigation: NavigationSystem) -> None:
     else:
         print("\nNo objects within reach")
 
-def handle_object_interaction(command: str, robot: Robot,
-                            navigation: NavigationSystem) -> None:
+def handle_object_interaction(command: str, robot: Robot, navigation: NavigationSystem) -> None:
     """Handle grasp and release commands."""
     if command == "grasp":
         grippable = navigation.get_nearby_objects(max_distance=100)
