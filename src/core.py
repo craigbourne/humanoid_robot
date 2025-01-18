@@ -4,6 +4,7 @@ AbstractRobot serves as a template that defines behaviour all robot implementati
 """
 
 from abc import ABC, abstractmethod
+from typing import Optional
 from src.safety import SafetyController
 from src.environment import EnvironmentMonitor
 from src.motion import RobotMotion
@@ -86,6 +87,7 @@ class Robot(AbstractRobot):
         self._object_handler = ObjectHandler()
         self._current_position = [0, 0, 0]  # x, y, z coordinates
         self._current_orientation = [0, 0, 0]  # roll, pitch, yaw
+        self._held_object = None  # ID of object currently being held
 
     def initialise(self) -> bool:
         """
@@ -100,7 +102,7 @@ class Robot(AbstractRobot):
                 self._current_state = "Idle"
                 return True
             return False
-        except (AttributeError, RuntimeError):  # Specific exceptions
+        except (AttributeError, RuntimeError):
             self._is_operational = False
             self._current_state = "Error"
             return False
@@ -108,7 +110,6 @@ class Robot(AbstractRobot):
     def get_current_state(self) -> str:
         """
         Get the robot's current operational state.
-        
         Returns: str - Current state of the robot
         """
         return self._current_state
@@ -122,7 +123,6 @@ class Robot(AbstractRobot):
         if not self.is_operational:
             return False
 
-        # Basic command validation based on current state
         valid_commands = {
             "Idle": ["walk", "turn", "grasp"],
             "Walking": ["stop", "turn"],
@@ -133,23 +133,30 @@ class Robot(AbstractRobot):
 
         return command in valid_commands.get(self._current_state, [])
 
-    def grip_object(self) -> bool:
+    def grip_object(self, object_id: int) -> bool:
         """
-        Attempt to grip an object.
-        Returns: bool - True if grip successful, False otherwise
+        Attempt to grip a specific object.
+        Args: object_id - ID of the object to grip
+        Returns: bool - True if gripping successful
         """
-        return self._object_handler.grip()
+        success = self._object_handler.grip()
+        if success:
+            self._held_object = object_id  # Store which object we're holding
+        return success
 
     def release_object(self) -> bool:
         """
-        Release currently held object.
-        Returns: bool - True if release successful, False otherwise
+        Release held object and clear held object tracking.
+        Returns: bool indicating if release was successful
         """
-        return self._object_handler.release()
+        success = self._object_handler.release()
+        if success:
+            self._held_object = None
+        return success
 
-    def is_holding_object(self) -> bool:
+    def get_held_object(self) -> Optional[int]:
         """
-        Check if robot is currently holding an object.
-        Returns: bool - True if object is held, False otherwise
+        Get ID of currently held object.
+        Returns: Optional[int] - object ID if holding an object, None otherwise
         """
-        return self._object_handler._gripper_status
+        return self._held_object

@@ -63,41 +63,62 @@ def handle_object_detection(navigation: NavigationSystem) -> None:
         print("\nNo objects within reach")
 
 def handle_object_interaction(command: str, robot: Robot, navigation: NavigationSystem) -> None:
-    """Handle grasp and release commands."""
+    """
+    Handle grasp and release commands for object manipulation.
+    Provides feedback about object status and storage.
+    """
     if command == "grasp":
+        # First check if we can reach any objects
         grippable = navigation.get_nearby_objects(max_distance=100)
         if grippable:
-            print("\nPicking up object")
-            robot.grip_object()
-            print("Object gripped successfully")
-        else:
-            print("\nNo objects within reach")
-    elif command == "release":
-        if robot.is_holding_object():
-            robot.release_object()
-            print("\nObject released")
-
-            # Immediate feedback about the released object's position
-            nearby = navigation.get_nearby_objects(max_distance=100)
-            if nearby:
-                print("Object remains within gripping range")
+            print("\nAttempting to grip nearest object...")
+            nearest_object = min(grippable.keys())
+            
+            if robot.grip_object(nearest_object):  # Pass the object ID to grip_object
+                print(f"Successfully gripped Object {nearest_object}")
+                print("Use 'scan' to see path to storage bay")
             else:
-                print("Object is no longer within gripping range")
+                print("Failed to grip object")
+        else:
+            print("\nNo objects within reach. Move closer to an object and try again")
+            
+    elif command == "release":
+        # Check if robot is holding anything before attempting release
+        held_object = robot.get_held_object()
+        if held_object is not None:
+            # Check if we're at the storage bay before releasing
+            if navigation.is_at_storage_bay(navigation.position):
+                robot.release_object()
+                print(f"\nObject {held_object} successfully stored in storage bay")
+            else:
+                robot.release_object()
+                print(f"\nObject {held_object} released")
+                print("Note: Object not in storage bay")
         else:
             print("\nNo object currently held")
 
-def handle_scan(navigation: NavigationSystem) -> None:
-    """Handle scan command."""
+def handle_scan(navigation: NavigationSystem, robot: Robot) -> None:
+    """Handle scan command with storage bay information."""
     print("\nScanning surroundings...")
     pos = navigation.position
     print(f"Current position: ({pos[0]:.0f}, {pos[1]:.0f})")
 
-    # Report nearby objects with directions and gripping status
+    # First show storage bay location
+    storage_direction, storage_steps = navigation.get_steps_to_location(navigation.storage_bay)
+    print(f"\nStorage Bay: {storage_steps} steps {storage_direction}")
+
+    # Then show objects with their status
+    held_object = robot.get_held_object()
     nearby = navigation.get_nearby_objects(max_distance=100)
+    
+    print("\nObjects:")
     for obj_id in navigation.objects:
-        direction, steps = navigation.get_steps_to_object(obj_id)
-        status = "GRIPPABLE" if obj_id in nearby else "out of reach"
-        print(f"Object {obj_id}: {steps} steps {direction} ({status})")
+        if obj_id == held_object:
+            print(f"Object {obj_id}: Currently being carried")
+        else:
+            direction, steps = navigation.get_steps_to_object(obj_id)
+            status = "GRIPPABLE" if obj_id in nearby else "out of reach"
+            print(f"Object {obj_id}: {steps} steps {direction} ({status})")
 
 def handle_where(navigation: NavigationSystem) -> None:
     """Handle where command."""
@@ -137,7 +158,7 @@ def main() -> None:
             elif command == "where":
                 handle_where(navigation)
             elif command == "scan":
-                handle_scan(navigation)
+                handle_scan(navigation, robot)
             elif command == "detect":
                 handle_object_detection(navigation)
             elif command in ["grasp", "release"]:

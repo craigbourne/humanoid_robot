@@ -14,195 +14,118 @@ class NavigationSystem:
 
     def __init__(self, room_dimensions: Tuple[float, float] = (1000, 1000)):
         """
-        Set up the navigation system.
+        Initialise the navigation system with room setup and object tracking.
         Args: room_dimensions - Width and length of room in centimetres
         """
         # Room setup
         self.room_width, self.room_length = room_dimensions
         self.centre = (self.room_width / 2, self.room_length / 2)
-
+        
         # Robot's current state
-        self.position = list(self.centre)  # Start in centre of room
-        self.facing_angle = 0  # 0 degrees = facing 'forward'
+        self.position = list(self.centre)
+        self.facing_angle = 0
 
         # Robot's physical dimensions
-        self.height = 173  # cm (Tesla Optimus height)
-        self.width = 60   # cm (shoulder width)
-        self.safe_distance = 100  # Minimum safe distance from objects
-
-        # Initialise objects in the workspace
+        self.height = 173  # Tesla Optimus height in centimetres
+        self.width = 60   # Shoulder width in centimetres
+        self.safe_distance = 100  # Minimum safe distance in centimetres
+        
+        # Storage bay is positioned in top-right corner
+        self.storage_bay = [800.0, 800.0]
+        self.storage_range = 50  # Distance within which storage is possible
+        
+        # Object management
         self.objects: Dict[int, List[float]] = {
-            1: [300.0, 300.0],  # Object 1 in bottom left quadrant
-            2: [700.0, 700.0],  # Object 2 in top right quadrant
-            3: [300.0, 700.0]   # Object 3 in top left quadrant
+            1: [300.0, 300.0],  # Bottom left quadrant
+            2: [700.0, 700.0],  # Top right quadrant
+            3: [300.0, 700.0]   # Top left quadrant
         }
-        self.object_counter = 3
+        self.stored_objects: List[int] = []
 
-        # Add storage bay in north-east corner of room
-        self.storage_bay = [800.0, 800.0]  # Positioned away from objects
+    def is_at_storage_bay(self, position: List[float]) -> bool:
+        """
+        Check if the given position is close enough to storage bay.
         
-        # Track object status
-        self.stored_objects: List[int] = []  # Keep track of which objects are in storage
-
-    def get_steps_to_object(self, obj_id: int) -> Optional[Tuple[str, int]]:
-        """
-        Calculate direction and steps to reach an object.
-        Returns: Tuple of (direction, steps) or None if object not found
-        """
-        obj_pos = self.objects.get(obj_id)
-        if not obj_pos:
-            return None
-        
-        dx = obj_pos[0] - self.position[0]
-        dy = obj_pos[1] - self.position[1]
-        
-        # Determine primary direction
-        if dx > 0 and dy > 0:
-            direction = "north-east"
-        elif dx > 0 and dy < 0:
-            direction = "south-east"
-        elif dx < 0 and dy > 0:
-            direction = "north-west"
-        else:
-            direction = "south-west"
-            
-        # Calculate steps (each step is 10 centimetres)
-        distance = math.sqrt(dx**2 + dy**2)
-        steps = int(distance / 10)
-        
-        return direction, steps
-
-    def explain_workspace(self) -> None:
-        """
-        Provide a clear explanation of the workspace layout.
-        """
-        print(f"Room size: {self.room_width/100:.0f}m x {self.room_length/100:.0f}m")
-        print("Robot at centre of room")
-        print("\nObjects to interact with:")
-        for obj_id in self.objects:
-            direction, steps = self.get_steps_to_object(obj_id)
-            print(f"Object {obj_id}: {steps} steps {direction}")
-
-    def get_location_summary(self) -> str:
-        """
-        Provide a human-friendly summary of current location and surroundings.
-        """
-        nearby_objects = self.get_nearby_objects()
-
-        summary = [
-            f"\nCurrent Position: ({self.position[0]:.0f}, {self.position[1]:.0f})",
-            f"Facing: {self.facing_angle} degrees",
-            "\nDistance to Walls:",
-            f"- Forward: {self.room_length - self.position[1]:.0f}cm",
-            f"- Backward: {self.position[1]:.0f}cm",
-            f"- Right: {self.room_width - self.position[0]:.0f}cm",
-            f"- Left: {self.position[0]:.0f}cm"
-        ]
-
-        if nearby_objects:
-            summary.extend(["\nNearby Objects:"])
-            for obj_id, distance in nearby_objects.items():
-                pos = self.objects[obj_id]
-                direction = self.get_relative_direction(pos[0], pos[1])
-                summary.append(f"- Object {obj_id}: {direction}, {distance:.0f}cm away")
-
-        return "\n".join(summary)
-
-    def is_at_storage_bay(self, position: List[float], tolerance: float = 50) -> bool:
-        """
-        Check if given position is at the storage bay.
-        Uses a tolerance value to allow slight positioning variations.
         """
         distance = math.sqrt(
             (position[0] - self.storage_bay[0])**2 +
             (position[1] - self.storage_bay[1])**2
         )
-        return distance <= tolerance
+        return distance <= self.storage_range
 
-    def get_relative_direction(self, x: float, y: float) -> str:
+    def store_object(self, object_id: int) -> bool:
         """
-        Convert coordinates into human-friendly relative directions.
+        Mark an object as stored and remove it from available objects.
+        Returns True if all objects are now stored.
         """
-        rel_x = x - self.position[0]
-        rel_y = y - self.position[1]
+        if object_id not in self.stored_objects:
+            self.stored_objects.append(object_id)
+            return len(self.stored_objects) == len(self.objects)
+        return False
 
-        angle = math.degrees(math.atan2(rel_y, rel_x))
-        relative_angle = (angle - self.facing_angle) % 360
+    def get_available_objects(self) -> Dict[int, List[float]]:
+        """Get list of objects not yet stored."""
+        return {obj_id: pos for obj_id, pos in self.objects.items() 
+                if obj_id not in self.stored_objects}
 
-        # Convert mathematical angle to compass direction
-        if 315 <= relative_angle or relative_angle < 45:
-            return "ahead"
-        if 45 <= relative_angle < 135:
-            return "to your right"
-        if 135 <= relative_angle < 225:
-            return "behind you"
-        return "to your left"
+    def get_steps_to_storage(self) -> Tuple[str, int]:
+        """Calculate direction and steps to reach storage bay."""
+        dx = self.storage_bay[0] - self.position[0]
+        dy = self.storage_bay[1] - self.position[1]
+        
+        direction = self._get_direction(dx, dy)
+        distance = math.sqrt(dx**2 + dy**2)
+        steps = int(distance / 10)  # Each step is 10 centimetres
+        
+        return direction, steps
 
-    def get_nearby_objects(self, max_distance: float = 200) -> Dict[int, float]:
-        """
-        Find objects within specified distance of robot.
-        Returns: Dictionary mapping object IDs to their distances
-        """
-        nearby = {}
-        for obj_id, pos in self.objects.items():
-            distance = math.sqrt(
-                (pos[0] - self.position[0])**2 +
-                (pos[1] - self.position[1])**2
-            )
-            if distance <= max_distance:
-                nearby[obj_id] = distance
-        return nearby
+    def _get_direction(self, dx: float, dy: float) -> str:
+        """Convert coordinate differences to compass direction."""
+        if dx > 0 and dy > 0:
+            return "north-east"
+        elif dx > 0 and dy < 0:
+            return "south-east"
+        elif dx < 0 and dy > 0:
+            return "north-west"
+        else:
+            return "south-west"
 
     def is_movement_safe(self, target_x: float, target_y: float) -> bool:
         """
-        Check if movement to target position is safe.
-        First checks if movement would get us within gripping range of an object.
-        If not, ensures we maintain safe distance from all objects.
+        Determine if movement to target position is safe.
+        Prevents overshooting storage bay when carrying objects.
         """
-        # First, check room boundaries
+        # Check room boundaries
         if not (0 <= target_x <= self.room_width and 
                 0 <= target_y <= self.room_length):
             return False
 
-        # Check if we're trying to reach an object
-        for obj_pos in self.objects.values():
-            distance_to_object = math.sqrt(
-                (obj_pos[0] - target_x)**2 + 
-                (obj_pos[1] - target_y)**2
+        # When objects remain to be stored, don't allow moving away from storage bay
+        if len(self.get_available_objects()) > 0:
+            current_distance = math.sqrt(
+                (self.storage_bay[0] - self.position[0])**2 + 
+                (self.storage_bay[1] - self.position[1])**2
             )
-            # Allow movement if it gets us within gripping range
-            if distance_to_object <= 100:  # 100cm gripping range
-                return True
-            # If we're not trying to grip but too close, prevent movement
-            if distance_to_object < self.safe_distance:
+            new_distance = math.sqrt(
+                (self.storage_bay[0] - target_x)**2 + 
+                (self.storage_bay[1] - target_y)**2
+            )
+            if new_distance > current_distance:
                 return False
 
-        # If not near any objects, movement is safe
         return True
 
     def walk(self, direction: str, steps: int) -> bool:
         """
-        Move in specified direction by number of steps.
-        Accounts for diagonal movement being longer than cardinal directions.
-        Each step is 10 centimetres in cardinal directions, adjusted for diagonals.
-        Returns: bool - True if movement successful, False otherwise
+        Move in specified direction, adjusting for diagonal movement.
         """
-        # Calculate target position based on direction and steps
-        dx, dy = 0, 0
+        # Calculate step size (shorter for diagonal movement)
         step_size = 10  # Base step size in centimetres
-        
-        # For diagonal movements, adjust step size
-        is_diagonal = False
         if "north" in direction and ("east" in direction or "west" in direction):
-            is_diagonal = True
-        if "south" in direction and ("east" in direction or "west" in direction):
-            is_diagonal = True
-        
-        # Adjust step size for diagonal movement
-        if is_diagonal:
             step_size = step_size / math.sqrt(2)
-        
+
         # Calculate movement
+        dx = dy = 0
         if "north" in direction:
             dy = steps * step_size
         if "south" in direction:
@@ -219,3 +142,15 @@ class NavigationSystem:
             self.position = [target_x, target_y]
             return True
         return False
+
+    def get_nearby_objects(self, max_distance: float = 200) -> Dict[int, float]:
+        """Find available objects within specified distance."""
+        nearby = {}
+        for obj_id, pos in self.get_available_objects().items():
+            distance = math.sqrt(
+                (pos[0] - self.position[0])**2 +
+                (pos[1] - self.position[1])**2
+            )
+            if distance <= max_distance:
+                nearby[obj_id] = distance
+        return nearby
