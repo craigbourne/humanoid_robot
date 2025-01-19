@@ -94,18 +94,18 @@ class NavigationSystem:
             return nearby
 
     # movement and safety
-    def is_movement_safe(self, target_x: float, target_y: float) -> bool:
+    def is_movement_safe(self, target_x: float, target_y: float, carrying_object: bool = False) -> bool:
         """
         Determine if movement to target position is safe.
-        Prevents overshooting storage bay when carrying objects.
+        Prevents overshooting storage bay only when carrying objects.
         """
         # Check room boundaries
         if not (0 <= target_x <= self.room_width and 
                 0 <= target_y <= self.room_length):
             return False
 
-        # When objects remain to be stored, don't allow moving away from storage bay
-        if len(self.get_available_objects()) > 0:
+        # Only check storage bay distance when carrying an object
+        if carrying_object:
             current_distance = math.sqrt(
                 (self.storage_bay[0] - self.position[0])**2 + 
                 (self.storage_bay[1] - self.position[1])**2
