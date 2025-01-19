@@ -12,6 +12,7 @@ class NavigationSystem:
     Manages robot navigation, location tracking and spatial awareness.
     """
 
+    # initialisation
     def __init__(self, room_dimensions: Tuple[float, float] = (1000, 1000)):
         """
         Initialise the navigation system with room setup and object tracking.
@@ -42,54 +43,57 @@ class NavigationSystem:
         }
         self.stored_objects: List[int] = []
 
-    def is_at_storage_bay(self, position: List[float]) -> bool:
-        """
-        Check if the given position is close enough to storage bay.
-        
-        """
-        distance = math.sqrt(
-            (position[0] - self.storage_bay[0])**2 +
-            (position[1] - self.storage_bay[1])**2
-        )
-        return distance <= self.storage_range
+    # navigation helpers
+    def _get_direction(self, dx: float, dy: float) -> str:
+            """Convert coordinate differences to compass direction."""
+            if dx > 0 and dy > 0:
+                return "north-east"
+            elif dx > 0 and dy < 0:
+                return "south-east"
+            elif dx < 0 and dy > 0:
+                return "north-west"
+            else:
+                return "south-west"
 
-    def store_object(self, object_id: int) -> bool:
-        """
-        Mark an object as stored and remove it from available objects.
-        Returns True if all objects are now stored.
-        """
-        if object_id not in self.stored_objects:
-            self.stored_objects.append(object_id)
-            return len(self.stored_objects) == len(self.objects)
-        return False
+    def get_steps_to_object(self, obj_id: int) -> Optional[Tuple[str, int]]:
+            """Calculate direction and steps to reach a specific object."""
+            obj_pos = self.objects.get(obj_id)
+            if not obj_pos:
+                return None
 
-    def get_available_objects(self) -> Dict[int, List[float]]:
-        """Get list of objects not yet stored."""
-        return {obj_id: pos for obj_id, pos in self.objects.items() 
-                if obj_id not in self.stored_objects}
+            dx = obj_pos[0] - self.position[0]
+            dy = obj_pos[1] - self.position[1]
+
+            direction = self._get_direction(dx, dy)
+            distance = math.sqrt(dx**2 + dy**2)
+            steps = int(distance / 10)  # Each step is 10 centimetres
+
+            return direction, steps
 
     def get_steps_to_storage(self) -> Tuple[str, int]:
-        """Calculate direction and steps to reach storage bay."""
-        dx = self.storage_bay[0] - self.position[0]
-        dy = self.storage_bay[1] - self.position[1]
-        
-        direction = self._get_direction(dx, dy)
-        distance = math.sqrt(dx**2 + dy**2)
-        steps = int(distance / 10)  # Each step is 10 centimetres
-        
-        return direction, steps
+            """Calculate direction and steps to reach storage bay."""
+            dx = self.storage_bay[0] - self.position[0]
+            dy = self.storage_bay[1] - self.position[1]
+            
+            direction = self._get_direction(dx, dy)
+            distance = math.sqrt(dx**2 + dy**2)
+            steps = int(distance / 10)  # Each step is 10 centimetres
+            
+            return direction, steps
 
-    def _get_direction(self, dx: float, dy: float) -> str:
-        """Convert coordinate differences to compass direction."""
-        if dx > 0 and dy > 0:
-            return "north-east"
-        elif dx > 0 and dy < 0:
-            return "south-east"
-        elif dx < 0 and dy > 0:
-            return "north-west"
-        else:
-            return "south-west"
+    def get_nearby_objects(self, max_distance: float = 200) -> Dict[int, float]:
+            """Find available objects within specified distance."""
+            nearby = {}
+            for obj_id, pos in self.get_available_objects().items():
+                distance = math.sqrt(
+                    (pos[0] - self.position[0])**2 +
+                    (pos[1] - self.position[1])**2
+                )
+                if distance <= max_distance:
+                    nearby[obj_id] = distance
+            return nearby
 
+    # movement and safety
     def is_movement_safe(self, target_x: float, target_y: float) -> bool:
         """
         Determine if movement to target position is safe.
@@ -143,14 +147,48 @@ class NavigationSystem:
             return True
         return False
 
-    def get_nearby_objects(self, max_distance: float = 200) -> Dict[int, float]:
-        """Find available objects within specified distance."""
-        nearby = {}
-        for obj_id, pos in self.get_available_objects().items():
-            distance = math.sqrt(
-                (pos[0] - self.position[0])**2 +
-                (pos[1] - self.position[1])**2
-            )
-            if distance <= max_distance:
-                nearby[obj_id] = distance
-        return nearby
+    # object and storage management
+    def is_at_storage_bay(self, position: List[float]) -> bool:
+        """
+        Check if the given position is close enough to storage bay.
+        
+        """
+        distance = math.sqrt(
+            (position[0] - self.storage_bay[0])**2 +
+            (position[1] - self.storage_bay[1])**2
+        )
+        return distance <= self.storage_range
+
+    def store_object(self, object_id: int) -> bool:
+        """
+        Mark an object as stored and remove it from available objects.
+        Returns True if all objects are now stored.
+        """
+        if object_id not in self.stored_objects:
+            self.stored_objects.append(object_id)
+            return len(self.stored_objects) == len(self.objects)
+        return False
+
+    def get_available_objects(self) -> Dict[int, List[float]]:
+        """Get list of objects not yet stored."""
+        return {obj_id: pos for obj_id, pos in self.objects.items() 
+                if obj_id not in self.stored_objects}
+
+    # ui 
+    def explain_workspace(self) -> None:
+        """
+        Provide clear explanation of the workspace and available objects.
+        """
+        print(f"\nRoom size: {self.room_width/100:.0f}m x {self.room_length/100:.0f}m")
+        print("Robot at centre of room")
+        
+        available = self.get_available_objects()
+        if available:
+            print("\nAvailable Objects:")
+            for obj_id, pos in available.items():
+                direction, steps = self.get_steps_to_object(obj_id)
+                print(f"Object {obj_id}: {steps} steps {direction}")
+                
+        print(f"\nStorage Bay: Located in the north-east corner")
+        direction, steps = self.get_steps_to_storage()
+        print(f"Currently {steps} steps {direction} from robot")
