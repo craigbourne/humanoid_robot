@@ -79,7 +79,7 @@ def handle_object_interaction(command: str, robot: Robot, navigation: Navigation
         if grippable:
             print("\nAttempting to grip nearest object...")
             nearest_object = min(grippable.keys())
-            
+
             if robot.grip_object(nearest_object):  # Pass the object ID to grip_object
                 print(f"Successfully gripped Object {nearest_object}")
                 print("Use 'scan' to see path to storage bay")
@@ -87,7 +87,7 @@ def handle_object_interaction(command: str, robot: Robot, navigation: Navigation
                 print("Failed to grip object")
         else:
             print("\nNo objects within reach. Move closer to an object and try again")
-            
+
     elif command == "release":
         # Check if robot is holding anything before attempting release
         held_object = robot.get_held_object()
@@ -97,7 +97,7 @@ def handle_object_interaction(command: str, robot: Robot, navigation: Navigation
                 robot.release_object()
                 all_stored = navigation.store_object(held_object)
                 print(f"\nObject {held_object} stored in storage bay")
-                
+
                 if all_stored:
                     print("\nAll objects in this area have been stored!")
                     print("Type 'next' to move to new area")
