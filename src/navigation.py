@@ -56,30 +56,53 @@ class NavigationSystem:
                 return "south-west"
 
     def get_steps_to_object(self, obj_id: int) -> Optional[Tuple[str, int]]:
-            """Calculate direction and steps to reach a specific object."""
-            obj_pos = self.objects.get(obj_id)
-            if not obj_pos:
-                return None
+        """Calculate direction and steps to reach a specific object."""
+        obj_pos = self.objects.get(obj_id)
+        if not obj_pos:
+            return None
 
-            dx = obj_pos[0] - self.position[0]
-            dy = obj_pos[1] - self.position[1]
+        dx = obj_pos[0] - self.position[0]
+        dy = obj_pos[1] - self.position[1]
 
-            direction = self._get_direction(dx, dy)
-            distance = math.sqrt(dx**2 + dy**2)
-            steps = int(distance / 10)  # Each step is 10 centimetres
-
-            return direction, steps
+        # Calculate direction based on dominant axis
+        if abs(dx) > abs(dy):
+            return "east" if dx > 0 else "west", int(abs(dx) / 10)
+        elif abs(dy) > abs(dx):
+            return "north" if dy > 0 else "south", int(abs(dy) / 10)
+        else:  # Diagonal movement
+            if dx > 0 and dy > 0:
+                return "north-east", int(math.sqrt(dx**2 + dy**2) / 10)
+            elif dx > 0 and dy < 0:
+                return "south-east", int(math.sqrt(dx**2 + dy**2) / 10)
+            elif dx < 0 and dy > 0:
+                return "north-west", int(math.sqrt(dx**2 + dy**2) / 10)
+            else:
+                return "south-west", int(math.sqrt(dx**2 + dy**2) / 10)
 
     def get_steps_to_storage(self) -> Tuple[str, int]:
-            """Calculate direction and steps to reach storage bay."""
-            dx = self.storage_bay[0] - self.position[0]
-            dy = self.storage_bay[1] - self.position[1]
-            
-            direction = self._get_direction(dx, dy)
-            distance = math.sqrt(dx**2 + dy**2)
-            steps = int(distance / 10)  # Each step is 10 centimetres
-            
-            return direction, steps
+        """Calculate direction and steps to reach storage bay."""
+        dx = self.storage_bay[0] - self.position[0]
+        dy = self.storage_bay[1] - self.position[1]
+        
+        # Calculate steps first
+        distance = math.sqrt(dx**2 + dy**2)
+        steps = int(distance / 10)  # Each step is 10 centimetres
+
+        # Determine direction based on dominant axis
+        # If one axis is much larger than the other, use cardinal direction
+        if abs(dx) > abs(dy) * 1.5:  # Significantly more horizontal movement
+            return "east" if dx > 0 else "west", steps
+        elif abs(dy) > abs(dx) * 1.5:  # Significantly more vertical movement
+            return "north" if dy > 0 else "south", steps
+        else:  # Truly diagonal movement
+            if dx > 0 and dy > 0:
+                return "north-east", steps
+            elif dx > 0 and dy < 0:
+                return "south-east", steps
+            elif dx < 0 and dy > 0:
+                return "north-west", steps
+            else:
+                return "south-west", steps
 
     def get_nearby_objects(self, max_distance: float = 200) -> Dict[int, float]:
             """Find available objects within specified distance."""
@@ -97,24 +120,25 @@ class NavigationSystem:
     def is_movement_safe(self, target_x: float, target_y: float, carrying_object: bool = False) -> bool:
         """
         Determine if movement to target position is safe.
-        Prevents overshooting storage bay only when carrying objects.
         """
         # Check room boundaries
         if not (0 <= target_x <= self.room_width and 
                 0 <= target_y <= self.room_length):
             return False
 
-        # Only check storage bay distance when carrying an object
-        if carrying_object:
+        # When carrying an object, prevent moving away from storage bay
+        if carrying_object and not self.is_at_storage_bay(self.position):
+            # Calculate if we're moving closer to storage bay
             current_distance = math.sqrt(
                 (self.storage_bay[0] - self.position[0])**2 + 
                 (self.storage_bay[1] - self.position[1])**2
             )
-            new_distance = math.sqrt(
+            target_distance = math.sqrt(
                 (self.storage_bay[0] - target_x)**2 + 
                 (self.storage_bay[1] - target_y)**2
             )
-            if new_distance > current_distance:
+            # Only allow movement that gets us closer to storage bay
+            if target_distance >= current_distance:
                 return False
 
         return True
